@@ -1,0 +1,152 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.Map.Entry;
+/**
+ * The Main class implements an application that reads lines from the standard input
+ * and prints them to the standard output.
+ */
+public class Main {
+  /**
+   * Iterate through each line of input.
+   */
+  public static void main(String[] args) throws IOException {
+    InputStreamReader reader = new InputStreamReader(System.in, StandardCharsets.UTF_8);
+    BufferedReader in = new BufferedReader(reader);
+        String line;
+        Map<String, Integer> m = new HashMap<>();
+        String temp = "";
+        String from = "", to = "";
+        int i = 0;
+        while ((line = in.readLine()) != null) {
+            //System.out.println(line);
+            if(i == 0) temp = line;
+            else if(i == 1) from = line;
+            else if(i == 2) to = line;
+            i++;
+        }
+        String[] s = temp.split(";");
+        String[] Nfrom = new String[s.length];
+        String[] Nto = new String[s.length];
+        double[] XRate = new double[s.length];
+        int index = 0;
+        for(String j : s) {
+            String[] tmp = j.split(",");
+            Nfrom[index] = tmp[0];
+            Nto[index] = tmp[1];
+            double x = Double.parseDouble(tmp[2]);
+            XRate[index] = -x;
+            index++;
+        }
+        m.put(Nfrom[0], 0);
+        m.put(Nto[0], 1);
+        int I = 2;
+        for(int k = 1; k < s.length; k++) {
+            if(!m.containsKey(Nfrom[k])) {
+                m.put(Nfrom[k], I);
+                I++;
+            }
+            if(!m.containsKey(Nto[k])) {
+                m.put(Nto[k], I);
+                I++;
+            }
+        }
+        Graph g = new Graph(I);
+        Main obj = new Main();
+        for(int l = 0; l < s.length; l++) {
+            int src = m.get(Nfrom[l]);
+            int dest = m.get(Nto[l]);
+            g.addEdge(src, dest, XRate[l]);
+        }
+        // Calculate Dijkstra.
+        obj.calculate(g.getVertex(m.get(from)));
+
+        // Print the minimum Distance.
+        Vertex des = g.getVertex(m.get(to));
+        double res = des.minDistance;
+        if(Math.abs(res) == Double.POSITIVE_INFINITY) System.out.println("-1.0");
+        else System.out.println(Math.abs(res));   
+  }
+  public void calculate(Vertex source){
+
+        source.minDistance = 1;
+        PriorityQueue<Vertex> queue = new PriorityQueue<Vertex>();
+        queue.add(source);
+
+        while(!queue.isEmpty()){
+
+            Vertex u = queue.poll();
+
+            for(Edge neighbour:u.neighbours){
+                Double newDist = - Math.abs(u.minDistance*neighbour.weight);
+
+                if(neighbour.target.minDistance>newDist){
+                    // Remove the node from the queue to update the distance value.
+                    queue.remove(neighbour.target);
+                    neighbour.target.minDistance = newDist;
+
+                    // Take the path visited till now and add the new node.s
+                    neighbour.target.path = new LinkedList<Vertex>(u.path);
+                    neighbour.target.path.add(u);
+
+                    //Reenter the node with new distance.
+                    queue.add(neighbour.target);
+                }
+            }
+        }
+    }
+
+    public static class Edge{
+        public final Vertex target;
+        public final double weight;
+        public Edge(Vertex target, double weight){
+            this.target = target;
+            this.weight = weight;
+        }
+    }
+
+    public static class Graph {
+        private ArrayList<Vertex> vertices;
+        public Graph(int numberVertices){
+            vertices = new ArrayList<Vertex>(numberVertices);
+            for(int i=0;i<numberVertices;i++){
+                vertices.add(new Vertex("v"+Integer.toString(i)));
+            }
+        }
+
+        public void addEdge(int src, int dest, double weight){
+            Vertex s = vertices.get(src);
+            Edge new_edge = new Edge(vertices.get(dest),weight);
+            s.neighbours.add(new_edge);
+        }
+
+        public ArrayList<Vertex> getVertices() {
+            return vertices;
+        }
+
+        public Vertex getVertex(int vert){
+            return vertices.get(vert);
+        }
+    }
+
+    public static class Vertex implements Comparable<Vertex>{
+        public final String name;
+        public ArrayList<Edge> neighbours;
+        public LinkedList<Vertex> path;
+        public double minDistance = Double.POSITIVE_INFINITY;
+        public Vertex previous;
+        public int compareTo(Vertex other){
+            return Double.compare(minDistance,other.minDistance);
+        }
+        public Vertex(String name){
+            this.name = name;
+            neighbours = new ArrayList<Edge>();
+            path = new LinkedList<Vertex>();
+        }
+        public String toString(){
+            return name;
+        }
+    }
+}
